@@ -1,0 +1,36 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio 14
+VisualStudioVersion = 14.0.25420.1
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "SunriseServer", "SunriseServer.vcxproj", "{C5F80730-F44F-4478-BDAE-6634EFC2CA88}"
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "SimpleEsp8266", "..\..\libraries\SimpleEsp8266\SimpleEsp8266.vcxitems", "{ABE10C90-AC02-4740-8C8D-8E9995E670EE}"
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "FastLED", "..\..\libraries\FastLED\FastLED\FastLED.vcxitems", "{9644D3BD-6A23-45B6-9D3B-D23D0017570E}"
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "ionlib-arduino", "..\..\libraries\ionlib-arduino\ionlib-arduino.vcxitems", "{9CA910F3-A36B-4A2A-90F7-78451389A719}"
+EndProject
+Global
+	GlobalSection(SharedMSBuildProjectFiles) = preSolution
+		..\..\libraries\FastLED\FastLED\FastLED.vcxitems*{9644d3bd-6a23-45b6-9d3b-d23d0017570e}*SharedItemsImports = 9
+		..\..\libraries\ionlib-arduino\ionlib-arduino.vcxitems*{9ca910f3-a36b-4a2a-90f7-78451389a719}*SharedItemsImports = 9
+		..\..\libraries\SimpleEsp8266\SimpleEsp8266.vcxitems*{abe10c90-ac02-4740-8c8d-8e9995e670ee}*SharedItemsImports = 9
+		..\..\libraries\FastLED\FastLED.vcxitems*{c5f80730-f44f-4478-bdae-6634efc2ca88}*SharedItemsImports = 4
+		..\..\libraries\ionlib-arduino\ionlib-arduino.vcxitems*{c5f80730-f44f-4478-bdae-6634efc2ca88}*SharedItemsImports = 4
+		..\..\libraries\SimpleEsp8266\SimpleEsp8266.vcxitems*{c5f80730-f44f-4478-bdae-6634efc2ca88}*SharedItemsImports = 4
+	EndGlobalSection
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|x86 = Debug|x86
+		Release|x86 = Release|x86
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{C5F80730-F44F-4478-BDAE-6634EFC2CA88}.Debug|x86.ActiveCfg = Debug|Win32
+		{C5F80730-F44F-4478-BDAE-6634EFC2CA88}.Debug|x86.Build.0 = Debug|Win32
+		{C5F80730-F44F-4478-BDAE-6634EFC2CA88}.Release|x86.ActiveCfg = Release|Win32
+		{C5F80730-F44F-4478-BDAE-6634EFC2CA88}.Release|x86.Build.0 = Release|Win32
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+EndGlobal
