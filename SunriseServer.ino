@@ -1,17 +1,21 @@
 
-#include "FastLED.h"
-#include "SimpleEsp8266.h"
+#include <FastLED.h>
 #include <SPI.h>
 #include <SD.h>
-#include <DFMiniMp3.h>
+#include <SimpleESP8266.h>
 #include <LiquidCrystal.h>
 #include <SoftwareSerial.h>
+#include <DFMiniMp3.h>
 #include "Mp3Support.h"
+#include "LEDSupport.h"
 #include "Composer.h"
 #include "Timer.h"
 #include "iondef.h"
 #include "memory.h"
-#define LOG_ENABLE
+#define DEBUG_ENABLE
+#ifdef DEBUG_ENABLE
+#define LOG_LEVEL_DEBUG
+#endif
 #include "log.h"
 
 #define TIMER_ENABLED
@@ -67,7 +71,7 @@ CRGB leds[NUM_LEDS];
 
 //Serial settings
 #define SERIAL_ESP Serial
-#ifdef LOG_ENABLE
+#ifdef DEBUG_ENABLE
 SoftwareSerial software_serial_1(SERIAL_DEBUG_RX_PIN, SERIAL_DEBUG_TX_PIN); // RX, TX
 #define SERIAL_DEBUG software_serial_1
 #define SERIAL_DEBUG_REF &software_serial_1
@@ -83,110 +87,17 @@ SoftwareSerial software_serial_2(SERIAL_DFPLAYER_RX_PIN, SERIAL_DFPLAYER_TX_PIN)
 
 #endif
 
-void ledProgress(uint8_t percent)
-{
-    for (uint16_t led_index = 0; led_index < NUM_LEDS; ++led_index)
-    {
-        if (led_index < NUM_LEDS * (percent / 100.0))
-        {
-            leds[led_index] = CRGB::White;
-        } else
-        {
-            leds[led_index] = CRGB::Black;
-        }
-    }
-    leds[NUM_LEDS - 1] = CRGB::White;
-    FastLED.show();
-}
-
-void showTestPattern() {
-    //Show test pattern
-    FastLED.setMaxPowerInMilliWatts(20000);
-    for (uint16_t led_index = 0; led_index < NUM_LEDS; ++led_index)
-    {
-        leds[led_index] = CRGB::Red;
-    }
-    FastLED.show();
-    delay(200);
-    for (uint16_t led_index = 0; led_index < NUM_LEDS; ++led_index)
-    {
-        leds[led_index] = CRGB::Green;
-    }
-    FastLED.show();
-    delay(200);
-    for (uint16_t led_index = 0; led_index < NUM_LEDS; ++led_index)
-    {
-        leds[led_index] = CRGB::Blue;
-    }
-    FastLED.show();
-    delay(200);
-    for (uint16_t led_index = 0; led_index < NUM_LEDS; ++led_index)
-    {
-        leds[led_index] = CRGB::White;
-        uint16_t pos_in_second_string = led_index - 149;
-        float pct_through_second_string = (float)pos_in_second_string / 150;
-        float scale = (1.0 - pct_through_second_string) * 255;
-        leds[led_index].red -= scale;
-        leds[led_index].blue -= scale;
-        leds[led_index].green -= scale;
-
-    }
-    FastLED.show();
-    delay(200);
-    for (uint16_t led_index = 0; led_index < NUM_LEDS; ++led_index)
-    {
-        if (led_index > 75)        {
-            leds[led_index] = CRGB::White;
-        } else
-        {
-            leds[led_index] = CRGB::Black;
-        }
-    }
-    FastLED.show();
-   
-}
-
-//void printDirectory(File dir, int numTabs)
-//{
-//    while (true)
-//    {
-//
-//        File entry = dir.openNextFile();
-//        if (!entry)
-//        {
-//            // no more files
-//            break;
-//        }
-//        for (uint8_t i = 0; i < numTabs; i++)
-//        {
-//            SERIAL_DEBUG.print('\t');
-//        }
-//        SERIAL_DEBUG.print(entry.name());
-//        if (entry.isDirectory())
-//        {
-//            SERIAL_DEBUG.println("/");
-//            printDirectory(entry, numTabs + 1);
-//        } else
-//        {
-//            // files have sizes, directories do not
-//            SERIAL_DEBUG.print("\t\t");
-//            SERIAL_DEBUG.println(entry.size(), DEC);
-//        }
-//        entry.close();
-//    }
-//}
-
 // This function sets up the leds and tells the controller about them,
 //  initializes the SD card, and setups the TCP Server
 void setup()
 {
     //Setup board
     SERIAL_ESP.begin(115200); while (!SERIAL_ESP); // Serial connection to ESP8266
-#ifdef LOG_ENABLE
+#ifdef DEBUG_ENABLE
     ion::LogEnable();
 
     SERIAL_DEBUG.begin(115200); while (!SERIAL_DEBUG); // UART serial debug
-    SERIAL_DEBUG.println(F("Booting up"));
+    LOGDEBUG("Boot");
 #endif
     //indicate no error
     pinMode(LED_BUILTIN, OUTPUT);
@@ -203,7 +114,7 @@ void setup()
 
     //Initialize FastLED
     FastLED.addLeds<WS2812B, ANTICLOCKWISE_LED_DATA_PIN, GRB>(leds, NUM_LEDS);
-    ledProgress(20);
+    ion::ledProgress(20, leds, NUM_LEDS);
 
     //Initialize SD
     SD.begin(SD_CS_PIN);
@@ -213,7 +124,7 @@ void setup()
     //root = SD.open("/");
     //
     //printDirectory(root, 0);
-    LOGINFO("Setup complete");
+    LOGINFO("Setup done");
 }
 //void testLoop(SimpleESP8266* wifi)
 //{
@@ -254,10 +165,11 @@ void setup()
 //    }
 //}
 
-bool openCprFile(const char* filename, ComposerFileHeader_t* header, uint8_t* bytes_per_pixel, File* led_file, float* fps) {
-  //Open the file and read the header
+bool openCprFile(const char* filename, ComposerFileHeader_t* header, uint8_t* bytes_per_pixel, File* led_file, float* fps)
+{
+    //Open the file and read the header
     *led_file = SD.open(filename);
-    LOGINFO("Called SD.open");
+    LOGDEBUG("Called SD.open");
     if (*led_file)
     {
         size_t bytes_read = led_file->readBytes((char*)header, sizeof(ComposerFileHeader_t));
@@ -269,17 +181,17 @@ bool openCprFile(const char* filename, ComposerFileHeader_t* header, uint8_t* by
         PrintComposerHeader(*header);
         if (bytes_read != sizeof(ComposerFileHeader_t))
         {
-            LOGINFO("Read %u bytes from %s expected %u", bytes_read, filename, sizeof(ComposerFileHeader_t));
+            LOGWARN("Read %u bytes from %s expected %u", bytes_read, filename, sizeof(ComposerFileHeader_t));
             return false;
         }
         if (header->type != COMPOSER_FILE_TYPE_RGB)
         {
-            LOGINFO("Only data type RGB (%d) is supported, not (%d)", COMPOSER_FILE_TYPE_RGB, header->type);
+            LOGWARN("Only %d is supported, not %d", COMPOSER_FILE_TYPE_RGB, header->type);
             return false;
         }
         if (header->num_leds > NUM_LEDS)
         {
-            LOGINFO("File defines too many LEDS, they will be truncated: expected <= %u, file needs %u", NUM_LEDS, header->num_leds);
+            LOGWARN("File has too many LEDS, will be truncated: expected <= %u, actual %u", NUM_LEDS, header->num_leds);
             header->num_leds = NUM_LEDS;
         }
         *bytes_per_pixel = composerFileTypeToBytesPerPixel(header->type);
@@ -287,7 +199,7 @@ bool openCprFile(const char* filename, ComposerFileHeader_t* header, uint8_t* by
         *fps = header->framerate / 1000.0;
     } else
     {
-        LOGINFO("Failed to open %s", filename);
+        LOGWARN("Fail to open %s", filename);
         return false;
     }
     return true;
@@ -304,10 +216,10 @@ void playSyncdFile(const char* filename, SimpleESP8266* wifi)
     float fps; //the framerate in Hz (instead of microhertz)
     uint32_t file_time;
     //The following average times found experimentally with 150 pixels
-    const uint32_t mean_sd_read_usec = 17890;
-    const uint32_t mean_sd_seek_usec = 730;
-    const uint32_t mean_led_show_usec = 1780;
-    const uint32_t mean_tcp_usec = 1430;
+    const uint32_t PROGMEM mean_sd_read_usec = 17890;
+    const uint32_t PROGMEM mean_sd_seek_usec = 730;
+    const uint32_t PROGMEM mean_led_show_usec = 1780;
+    const uint32_t PROGMEM mean_tcp_usec = 1430;
 #ifdef TIMER_ENABLED
     PerfMon_t perf_led;
     PerfMon_t perf_tcp_rx;
@@ -321,16 +233,17 @@ void playSyncdFile(const char* filename, SimpleESP8266* wifi)
     InitPerf(&perf_sd_seek);
 #endif
     //Announce file
-    LOGINFO("Playing sync'd file: %s", filename);
+    LOGINFO("Play sync'd file: %s", filename);
     //Open the animation file
     File led_file;
     bool file_open = openCprFile(filename, &header, &bytes_per_pixel, &led_file, &fps);
 
-    if(!file_open) {
-      return;
+    if (!file_open)
+    {
+        return;
     }
-    
-    LOGINFO("Awaiting start command");
+
+    LOGDEBUG("Await start cmd");
     while (bytes_recv != sizeof(SyncCmd_t) || cmd.cmdType != SYNC_CMD_TYPE_START)
     {
         //Wait for start command
@@ -339,7 +252,7 @@ void playSyncdFile(const char* filename, SimpleESP8266* wifi)
 
     t0 = micros();
 
-    LOGINFO("Starting music");
+    LOGDEBUG("Start music");
 
     //Set the socket timeout as short as possible so that we can get non-blocking-like behavior
     wifi->setTimeouts(10, 0, 0, 0, 1);
@@ -433,20 +346,20 @@ void playLocalFile(uint8_t track_id, const char* filename)
     uint32_t frame_number = 0;
     uint32_t file_time;
     uint32_t t0;
-    const uint32_t mean_led_show_usec = 1780;
+    const uint32_t PROGMEM mean_led_show_usec = 1780;
     uint8_t led_on = 1;
     uint8_t delays = 0;
-    const float fps_fudge = ((25.87+3.8)/25.87) / (237.0/236.0);
-    const uint32_t start_fudge = 50;
+    const float PROGMEM fps_fudge = ((25.87 + 3.8) / 25.87) / (237.0 / 236.0);
+    const uint32_t PROGMEM start_fudge = 50;
 
-    LOGINFO("Playing local music file #%u with animation %s", track_id, filename);
+    LOGINFO("Play music #%u with animation %s", track_id, filename);
     LOGSRAM();
     //Setup the DFPlayer (i.e. the SD card reader that supports audio)
     DFMiniMp3<SERIAL_DFPLAYER_TYPE, Mp3Notify> mp3(SERIAL_DFPLAYER);
     mp3.begin();
     mp3.setVolume(15);
 
-    LOGINFO("Created DFPlayer");
+    LOGDEBUG("Created DFPlayer");
     LOGSRAM();
 
 
@@ -454,11 +367,12 @@ void playLocalFile(uint8_t track_id, const char* filename)
     File led_file;
     bool file_open = openCprFile(filename, &header, &bytes_per_pixel, &led_file, &fps);
     //fps = 10;
-    if(!file_open) {
-        LOGINFO("Failed to open video file");
+    if (!file_open)
+    {
+        LOGWARN("Fail to open video");
         return;
     }
-    LOGINFO("Video open");
+    LOGDEBUG("Video open");
 
     //Show heartbeat
     //memset(leds, 0, header.num_leds * bytes_per_pixel);
@@ -476,53 +390,54 @@ void playLocalFile(uint8_t track_id, const char* filename)
     t0 = micros();
     fps = fps * fps_fudge;
 
-    LOGINFO("Starting animation");
+    LOGDEBUG("Animation start");
     LOGSRAM();
 
     while (led_file.available())
+    {
+        //Read the first num_leds*bytes_per_pixel bytes
+        led_file.readBytes((uint8_t*)leds, header.num_leds * bytes_per_pixel);
+
+        //Compute what time this is suppose to be sent
+        uint32_t ideal_time = (frame_number / fps) * SECONDS_TO_MICROSECONDS;
+        //Get the current time
+        file_time = micros() - t0;
+        if (ideal_time > file_time)
         {
-            //Read the first num_leds*bytes_per_pixel bytes
-            led_file.readBytes((uint8_t*)leds, header.num_leds * bytes_per_pixel);
-
-            //Compute what time this is suppose to be sent
-            uint32_t ideal_time = (frame_number / fps) * SECONDS_TO_MICROSECONDS;
-            //Get the current time
-            file_time = micros() - t0;
-            if (ideal_time > file_time)
-            {
-                delayMicroseconds(ideal_time - file_time - mean_led_show_usec);
-            }
-            FastLED.show();
-
-            frame_number++;
+            delayMicroseconds(ideal_time - file_time - mean_led_show_usec);
         }
-    LOGINFO("Animation complete");
+        FastLED.show();
+
+        frame_number++;
+    }
+    LOGINFO("Animation done");
 }
+
 // This function runs over and over, and is where you do the magic to light
 // your leds.
 void loop()
 {
-    ledProgress(40);
+    ion::ledProgress(40, leds, NUM_LEDS);
 
     //Initialize ESP8266
     SimpleESP8266 wifi(&SERIAL_ESP, SERIAL_DEBUG_REF, WIFI_RESET_PIN);
-    LOGINFO("Setting up WiFi");
+    LOGINFO("Set up WiFi");
     boolean setup = wifi.setupTcpServer(ESP_SSID, ESP_PASS, CMD_PORT);
     if (setup)
     {
-        LOGINFO("Setup complete");
+        LOGINFO("Setup done");
     } else
     {
-        LOGINFO("Wifi setup failed");
+        LOGWARN("Wifi setup fail");
         delay(1000);
         return;
     }
-    ledProgress(60);
+    ion::ledProgress(60, leds, NUM_LEDS);
 
     LOGSRAM();
     delay(1000);
     SunriseCommand_t cmd;
-    ledProgress(100);
+    ion::ledProgress(100, leds, NUM_LEDS);
 
     int32_t bytes_recieved = wifi.tcpRecv((char*)&cmd, sizeof(SunriseCommand_t));
 
@@ -537,7 +452,7 @@ void loop()
                 playLocalFile(cmd.localMusic.trackId, cmd.localMusic.filename);
                 break;
             default:
-                LOGINFO("Received invalid command with action: %d", cmd.action);
+                LOGWARN("Rx invalid cmd: %d", cmd.action);
                 break;
         }
     }
